@@ -75,7 +75,7 @@ class Service
      * push message to a topic, and those who subscribed that topic will receive
      * the message (it follows the publish/subscribe pattern).
      *
-     * Note: The message given will pushed as a whole, even if it's an array. Call
+     * Note: The message given will be pushed as a whole(even if it's an array). Call
      * this method multiple times if you want to push multiple messages.
      *
      * @param string $topic     topic to push message to
@@ -147,7 +147,7 @@ class Service
     {
         $this->ensureSubscriberAndMessageNoneEmpty($alias, $message);
 
-        if (is_string($alias)) {  // un-icast
+        if (is_string($alias)) {  // uni-cast
             return $this->pushUnicastMessage($this->buildPublishToAliasPayload($alias, $message, $options));
         }
 
@@ -392,7 +392,7 @@ class Service
 
     private function getMaxAliasesPerBatch()
     {
-        return array_get($this->options, 'alias_size', 800);
+        return array_get($this->options, 'alias_size');
     }
 
     /**
