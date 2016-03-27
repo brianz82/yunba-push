@@ -155,14 +155,22 @@ class Service
         return $this->pushToAliases($alias, $message, $options);
     }
 
-    // handle multi-cast
-    private function pushToAliases(array $aliases, $message, array $options = []) {
+    /**
+     * push message to aliases (multi-cast)
+     *
+     * @param array $aliases       aliases to push message to
+     * @param mixed $message       message to push
+     * @param array $options       options for Yunba's 'publish_to_alias' or 'publish_to_alias_batch' method
+     *
+     * @return string|array
+     */
+    public function pushToAliases(array $aliases, $message, array $options = []) {
         // Yunba advises that no more than 1000 aliases in a batch is preferred
         $maxAliasesPerBatch = $this->getMaxAliasesPerBatch();
-        $numberOfBatch = ceil(count($aliases) / $maxAliasesPerBatch);
+        $numberOfBatch = intval(ceil(count($aliases) / $maxAliasesPerBatch));
         $offset = 0;
 
-        $response = []; // the response of this multicast
+        $response = []; // the response of this multi-cast
 
         // send message to aliases in batch
         for ($batch = 0; $batch < $numberOfBatch; $batch++) {
@@ -170,7 +178,7 @@ class Service
             $aliasesPerBatch = array_slice($aliases, $offset, $maxAliasesPerBatch);
             $offset += $maxAliasesPerBatch;
 
-            $batchResponse = $this->pushMulticastMessage($this->buildPublishToAliasBatchPayload($aliases, $message, $options));
+            $batchResponse = $this->pushMulticastMessage($this->buildPublishToAliasBatchPayload($aliasesPerBatch, $message, $options));
             if (!empty($batchResponse)) {
                 $response = $response + $batchResponse;
             }
@@ -378,11 +386,11 @@ class Service
     //build payload for 'publish_async' method
     private function buildMessageCheckPayload($messageId, $topic = null)
     {
-        return array_filter([
+        return [
             'method'  => 'publish_check',
             'topic'   => $topic,
             'msg'     => $messageId,
-        ]);
+        ];
     }
 
     private function getPushUrl()

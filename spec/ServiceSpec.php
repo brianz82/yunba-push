@@ -17,7 +17,7 @@ class ServiceSpec extends ObjectBehavior
         $this->beAnInstanceOf(\Homer\Push\Yunba\Service::class, [
             'appKey',     // app key from Yunba
             'secretKey',  // secret key from Yunba
-            null,
+            [ 'alias_size' => 2 ], // set up the alias size
             $client,      // http client
         ]);
     }
@@ -96,6 +96,48 @@ class ServiceSpec extends ObjectBehavior
         $results->shouldHaveKeyWithContainedValue('alias2', [
             'status' => 0,
             'messageId' => '559971761798516736',
+        ]);
+    }
+
+    function it_multicasts_in_batch(ClientInterface $client)
+    {
+        $client->request('POST', 'http://rest.yunba.io:8080', [
+            'headers' => ['Content-Type' => 'application/json'],
+            'body'    => json_encode([
+                'method'  => 'publish_to_alias_batch',
+                'aliases' => ['alias1', 'alias2'],
+                'msg'     => 'message',
+                'appkey'  => 'appKey',
+                'seckey'  => 'secretKey',
+            ]),
+        ])->willReturn(new Response(200, [], file_get_contents(__DIR__ . '/data/alias_multicast_batch_1.json')));
+        $client->request('POST', 'http://rest.yunba.io:8080', [
+            'headers' => ['Content-Type' => 'application/json'],
+            'body'    => json_encode([
+                'method'  => 'publish_to_alias_batch',
+                'aliases' => ['alias3'],
+                'msg'     => 'message',
+                'appkey'  => 'appKey',
+                'seckey'  => 'secretKey',
+            ]),
+        ])->willReturn(new Response(200, [], file_get_contents(__DIR__ . '/data/alias_multicast_batch_2.json')));
+
+        $results = $this->pushToAlias(['alias1', 'alias2', 'alias3'], 'message');
+        $results->shouldHaveCount(3);
+
+        $results->shouldHaveKeyWithContainedValue('alias1', [
+            'status' => 5,
+            'alias'  => '56f23eda4407a3cd028ad668-alias1',
+        ]);
+
+        $results->shouldHaveKeyWithContainedValue('alias2', [
+            'status' => 0,
+            'messageId' => '559971761798516736',
+        ]);
+
+        $results->shouldHaveKeyWithContainedValue('alias3', [
+            'status' => 0,
+            'messageId' => '559971761798516737',
         ]);
     }
 
